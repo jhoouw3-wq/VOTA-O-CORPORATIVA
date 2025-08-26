@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Votação Corporativa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responsivo -->
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      padding: 20px;
+      color: #333;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    header h1 { color: #1e3a8a; font-size: 22px; }
+    header p { color: #555; font-size: 14px; }
+    .setor {
+      background: #ffffff;
+      padding: 20px;
+      margin: 15px auto;
+      border-radius: 10px;
+      max-width: 500px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border-left: 6px solid #1e3a8a;
+    }
+    .setor h2 { color: #1e3a8a; margin-bottom: 10px; font-size: 18px; }
+    .botoes { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .botoes button {
+      flex: 1;
+      min-width: 90px;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .feliz { background: #22c55e; color: white; }
+    .neutro { background: #f59e0b; color: white; }
+    .frustrado { background: #ef4444; color: white; }
+    textarea {
+      width: 100%;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      font-size: 14px;
+    }
+    .resultado {
+      margin-top: 10px;
+      font-size: 14px;
+      background: #f9fafb;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+    }
+    #todosVotos {
+      margin-top: 20px;
+      padding: 15px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      display: none;
+    }
+    #mostrarVotosBtn {
+      margin: 10px 0;
+      padding: 8px 15px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Sistema de Votação Corporativo</h1>
+  <p>Cada pessoa pode registrar apenas um voto por dia.</p>
+  <p style="color:#b91c1c; font-weight:bold; margin-top:10px;">
+    ⚠️ Escreva sua observação antes de votar. Após votar, só poderá votar novamente no próximo dia.
+  </p>
+</header>
+
+<div id="conteudo"></div>
+<button id="mostrarVotosBtn" onclick="mostrarTodosVotos()">Mostrar todos os votos</button>
+<div id="todosVotos"></div>
+
+<script>
+const setores = ["Produção", "Administrativo", "Comercial", "Logística"];
+const opcoes = ["Feliz 😀", "Neutro 😐", "Frustrado 😞"];
+let votos = JSON.parse(localStorage.getItem("votosObservacaoCorp")) || {};
+
+const hoje = new Date().toISOString().split("T")[0];
+let ultimaData = localStorage.getItem("dataUltimoVotoCorp") || null;
+let jaVotouHoje = ultimaData === hoje;
+
+setores.forEach(setor => {
+  if (!votos[setor]) {
+    votos[setor] = { "Feliz 😀": 0, "Neutro 😐": 0, "Frustrado 😞": 0, observacoes: [] };
+  }
+});
+
+function votar(setor, opcao) {
+  if (jaVotouHoje) {
+    alert("Você já votou hoje. Volte amanhã.");
+    return;
+  }
+  const obsInput = document.getElementById(`obs-${setor}`);
+  const textoObs = obsInput.value.trim();
+  votos[setor][opcao]++;
+  if (textoObs) votos[setor].observacoes.push(`[${hoje}] ${textoObs}`);
+  jaVotouHoje = true;
+  localStorage.setItem("votosObservacaoCorp", JSON.stringify(votos));
+  localStorage.setItem("dataUltimoVotoCorp", hoje);
+  render();
+}
+
+function render() {
+  const conteudo = document.getElementById("conteudo");
+  conteudo.innerHTML = "";
+  setores.forEach(setor => {
+    const div = document.createElement("div");
+    div.className = "setor";
+    div.innerHTML = `
+      <h2>${setor}</h2>
+      <textarea id="obs-${setor}" rows="2" placeholder="Escreva uma observação..." ${jaVotouHoje ? "disabled" : ""}></textarea>
+      <div class="botoes">
+        <button class="feliz" onclick="votar('${setor}','Feliz 😀')" ${jaVotouHoje ? "disabled" : ""}>😀 Feliz</button>
+        <button class="neutro" onclick="votar('${setor}','Neutro 😐')" ${jaVotouHoje ? "disabled" : ""}>😐 Neutro</button>
+        <button class="frustrado" onclick="votar('${setor}','Frustrado 😞')" ${jaVotouHoje ? "disabled" : ""}>😞 Frustrado</button>
+      </div>
+      <div class="resultado">
+        <strong>Votos:</strong><br>
+        😀 Feliz: ${votos[setor]["Feliz 😀"]}<br>
+        😐 Neutro: ${votos[setor]["Neutro 😐"]}<br>
+        😞 Frustrado: ${votos[setor]["Frustrado 😞"]}<br><br>
+        <strong>Observações:</strong><br>
+        ${votos[setor].observacoes.length > 0 ? votos[setor].observacoes.map(o => "• " + o).join("<br>") : "Nenhuma observação registrada."}
+      </div>
+    `;
+    conteudo.appendChild(div);
+  });
+}
+
+function mostrarTodosVotos() {
+  const todosDiv = document.getElementById("todosVotos");
+  todosDiv.style.display = todosDiv.style.display === "none" ? "block" : "none";
+  let html = `<h3>Todos os Votos</h3>`;
+  setores.forEach(setor => {
+    html += `<strong>${setor}:</strong><br>`;
+    opcoes.forEach(opcao => { html += `${opcao}: ${votos[setor][opcao]}<br>`; });
+    html += `<strong>Observações:</strong><br>`;
+    html += votos[setor].observacoes.length > 0 ? votos[setor].observacoes.map(o => "• " + o).join("<br>") : "Nenhuma observação registrada.";
+    html += "<br><br>";
+  });
+  todosDiv.innerHTML = html;
+}
+
+window.onload = render;
+</script>
+</body>
+</html>
